@@ -1,0 +1,36 @@
+{
+  "name": "ollama-cloud-usage-report",
+  "version": "2.0.0",
+  "description": "Gera relatório HTML completo com TODAS as variações cloud dos modelos Ollama, extraindo Usage Cost (barrinha de 4 níveis) e Context",
+  "author": "OpenWork User",
+  "license": "MIT",
+  "tags": ["ollama", "cloud", "research", "report", "html", "usage", "cost"],
+  "agents": ["opencode", "claude-code", "hermes-agent", "codex", "cursor"],
+  "repository": "https://github.com/armel-felipe/ollama-cloud-usage-report",
+  "homepage": "https://github.com/armel-felipe/ollama-cloud-usage-report",
+  "bugs": "https://github.com/armel-felipe/ollama-cloud-usage-report/issues",
+  "main": "SKILL.md",
+  "files": [
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "requirements": {
+    "python": ">=3.0",
+    "node": ">=16.0",
+    "browser_tools": true,
+    "file_write": true
+  },
+  "compatibility": {
+    "opencode": true,
+    "claude_code": true,
+    "hermes_agent": true,
+    "codex": true,
+    "cursor": true,
+    "openwork": true
+  },
+  "installation": {
+    "global": "npx skills add armel-felipe/ollama-cloud-usage-report --skill ollama-cloud-usage-report --agent <AGENT> --global",
+    "local": "npx skills add armel-felipe/ollama-cloud-usage-report --skill ollama-cloud-usage-report --agent <AGENT>"
+  }
+}

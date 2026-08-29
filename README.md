@@ -10,9 +10,22 @@ Esta skill pesquisa o catálogo da Ollama e extrai:
 - **Context window** (em tokens)
 - Inclui variações cloud de modelos híbridos (que também têm versões para download local)
 
-## 📦 Instalação
+## 📦 Instalação Rápida
 
-### Opção 1: Instalação Global (Recomendado)
+### Usando secure-skill-installer (Recomendado)
+
+Se você tem a skill `secure-skill-installer` instalada, basta pedir:
+
+> "Instale a skill ollama-cloud-usage-report do repositório armel-felipe/ollama-cloud-usage-report globalmente para OpenCode"
+
+A skill vai:
+1. ✅ Validar o repositório
+2. ✅ Pedir confirmação de escopo (global/local)
+3. ✅ Executar `npx skills add` com segurança
+4. ✅ Auditar os arquivos instalados
+5. ✅ Reportar qualquer risco encontrado
+
+### Instalação Manual
 
 A skill fica disponível em todos os seus projetos.
 
