@@ -1,7 +1,7 @@
 ---
 name: ollama-cloud-usage-report
 description: Gera um relatório HTML completo com TODAS as variações cloud dos modelos Ollama, extraindo custo de input, cached e output por 1M tokens, CPMT pelo pior caso, capacidades Available, Context e Size. Inclui variações cloud de modelos híbridos, usa Null quando cached não existe e ordena por CPMT crescente.
-version: 4.0.0
+version: 5.0.0
 author: OpenWork User
 tags: [ollama, cloud, research, report, html, pricing, cpmt]
 agents: [opencode, claude-code, hermes-agent, codex, cursor]
@@ -10,7 +10,7 @@ compatibility: Requires browser tools and file writing capabilities. Works in Op
 
 # Ollama Cloud Usage Report
 
-Pesquise todas as variações cloud disponíveis na Ollama e gere um relatório HTML autocontido, ordenado pelo CPMT (custo total por 1M tokens no pior caso). O formato antigo de barras e níveis Low/Medium/High/Max não deve ser usado.
+Pesquise todas as variações cloud disponíveis na Ollama e gere um relatório HTML autocontido, ordenado pelo CPMT (custo total por 1M tokens no pior caso). O formato antigo de barras e níveis Low/Medium/High/Max não deve ser usado. A saída deve seguir o contrato visual Executive dark abaixo em todas as execuções.
 
 ## Fluxo de coleta
 
@@ -70,18 +70,40 @@ Use exatamente esta ordem:
 
 Renderize cada item de Available como uma pill visual. Não renderize `cloud` nessa coluna.
 
-## Estilo obrigatório do HTML
+## Direção visual obrigatória: Executive dark
 
-Crie somente `ollama-cloud-usage-report.html` no workspace. O estilo deve permanecer no mesmo arquivo, dentro de um único bloco `<style>`:
+Crie somente `ollama-cloud-usage-report.html` no workspace. Use uma interface de relatório Executive dark, sóbria e orientada a dados:
 
-- visual refinado, limpo e profissional;
-- cards de resumo com total de variações, modelos base, cached disponível, cached Null, menor CPMT e maior CPMT;
-- destaque visual para CPMT, sem esconder Input/Cached/Output;
-- pills coloridas para `tools`, `vision` e `thinking`;
-- tabela responsiva com rolagem horizontal em telas pequenas;
-- contraste legível, foco em hierarquia e acessibilidade;
-- sem `<link>`, `@import`, CDN, fontes externas ou arquivos CSS/JS auxiliares;
-- notas metodológicas explicando peak, CPMT e `Null`.
+- Fundo quase preto e superfícies elevadas em grafite, com bordas sutis e tipografia sans-serif compacta do sistema.
+- Roxo suave para CPMT e métricas principais; contraste suficiente para texto, dados base e valores peak.
+- Cards de resumo com números grandes e uma `metric rail` de seis métricas: variações cloud, modelos base, menor CPMT, maior CPMT, cached disponível e cached `Null`.
+- Pills distintas e legíveis para `tools`, `vision` e `thinking`; ausência de capacidades deve ser `—`.
+- Tabela como ranking de custo, com CPMT visualmente dominante, ordenada do menor para o maior valor.
+- Rolagem horizontal da tabela em telas estreitas e layout responsivo em desktop/mobile.
+
+## Contrato do layout
+
+O HTML deve conter, nesta ordem, as seções semânticas abaixo:
+
+1. **Header:** logo oficial Ollama à esquerda do título `Ollama Cloud Usage Report`, subtítulo/metadata de coleta e chip `PEAK PRICING`.
+2. **Metric rail:** as seis métricas de resumo descritas acima.
+3. **Method note:** explicação curta de CPMT worst case e do tratamento de `Null`.
+4. **Ranking table:** caption, cabeçalhos com `scope="col"` e as oito colunas Modelo, Input, Cached, Output, CPMT, Available, Context e Size.
+5. **Capability legend:** contagens de `tools`, `vision` e `thinking` usando as mesmas pills.
+6. **Methodology footer:** origem, data, limitações e páginas não lidas.
+
+O logotipo deve ser o asset oficial `/public/ollama.png` usado como referência e embutido no próprio HTML como imagem inline/base64, com `src="data:image/png;base64,..."`, `alt="Ollama"`, tamanho discreto e alinhamento ao título. Nunca use caminho relativo, URL remota ou placeholder textual no lugar do logo.
+
+## Autocontenção e proibições
+
+O relatório precisa abrir e manter o logo visível sem internet. É proibido incluir:
+
+- qualquer `<link>` ou `<script src="...">`;
+- `@import`, CDN, stylesheet externo ou fonte externa;
+- imagem remota, URL `http://`/`https://` em `src`, CSS ou conteúdo visual;
+- arquivos CSS, JavaScript ou fontes auxiliares para o relatório.
+
+Todo CSS deve ficar em exatamente um bloco `<style>` no HTML. JavaScript inline não é necessário para o relatório estático e não deve ser adicionado sem requisito explícito.
 
 ## Validação antes de finalizar
 
@@ -92,7 +114,13 @@ Confirme que:
 - `cloud` não aparece em Available;
 - Available contém somente `tools`, `vision`, `thinking` ou `—`;
 - cada linha possui CPMT, Available, Context e Size;
-- o HTML tem um único bloco `<style>` e nenhuma dependência externa;
+- o HTML tem exatamente um bloco `<style>`;
+- existe `data:image/png;base64` no `src` do logo e o mesmo elemento tem `alt="Ollama"`;
+- não existe `<link>`, `@import`, CDN, fonte externa, imagem remota ou URL `http(s)` de recurso;
+- existem header, metric rail, method note, ranking table, capability legend e methodology footer;
+- o header contém `Ollama Cloud Usage Report` e `PEAK PRICING`;
+- a tabela tem caption e os oito cabeçalhos semânticos na ordem especificada;
+- as pills e a legenda usam somente `tools`, `vision` e `thinking`;
 - páginas não lidas e campos `N/A` são listados no resumo final.
 
 ## Saída

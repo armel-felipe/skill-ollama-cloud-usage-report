@@ -13,6 +13,9 @@ Skill multi-harness para gerar relatórios HTML completos com todas as variaçõ
 - Extrai **Context** e **Size**.
 - Usa `Null` quando o modelo não oferece preço `cached`.
 - Gera `ollama-cloud-usage-report.html`.
+- Usa direção visual **Executive dark**: header com logo Ollama, chip `PEAK PRICING`, metric rail, nota metodológica, ranking table, pills e capability legend.
+- Embute o logo oficial como `data:image/png;base64` com `alt="Ollama"`, tornando o HTML independente de rede.
+- Mantém exatamente um bloco `<style>` e não usa links, `@import`, CDN, fontes externas, imagens remotas ou scripts externos.
 
 O formato antigo de barras e níveis Low/Medium/High/Max não é mais usado.
 
@@ -57,15 +60,21 @@ skill-ollama-cloud-usage-report/
 └── opencode/skills/ollama-cloud-usage-report/SKILL.md
 ```
 
+## Direção visual e validação
+
+O relatório deve manter o fundo quase preto, superfícies grafite, roxo para CPMT e métricas principais, cards de resumo e tabela responsiva. A `metric rail` apresenta variações cloud, modelos base, menor CPMT, maior CPMT, cached disponível e cached `Null`. O header coloca o logo imediatamente à esquerda de `Ollama Cloud Usage Report` e exibe `PEAK PRICING`.
+
+Antes de finalizar, valide que a tabela está ordenada por CPMT crescente, que `Null` só vale zero na soma, que `Available` contém apenas `tools`, `vision` e `thinking`, e que existem header, metric rail, method note, ranking table, capability legend e methodology footer. Confirme também um único `<style>`, `data:image/png;base64`, `alt="Ollama"` e ausência de qualquer URL remota ou dependência externa.
+
 ## Requisitos
 
 - Browser tools para acessar `ollama.com`.
 - Capacidade de escrever arquivos no workspace.
-- Acesso à internet.
+- Acesso à internet somente durante a coleta; o HTML final deve funcionar offline.
 
 ## Segurança
 
-A skill apenas lê páginas públicas da Ollama e gera um HTML estático. Não requer API keys nem executa código externo.
+A skill apenas lê páginas públicas da Ollama e gera um HTML estático. Não requer API keys, não executa código externo e não injeta dependências remotas no relatório.
 
 ## Licença
 
