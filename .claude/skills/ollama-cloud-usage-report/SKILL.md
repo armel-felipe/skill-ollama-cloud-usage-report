@@ -1,164 +1,100 @@
 ---
 name: ollama-cloud-usage-report
-description: Gera um relatório HTML completo com TODAS as variações cloud dos modelos Ollama, extraindo custo de input, cached e output por 1M tokens, além de Context e Size. Inclui variações cloud de modelos híbridos e usa Null quando o modelo não oferece preço cached.
-version: 3.0.0
+description: Gera um relatório HTML completo com TODAS as variações cloud dos modelos Ollama, extraindo custo de input, cached e output por 1M tokens, CPMT pelo pior caso, capacidades Available, Context e Size. Inclui variações cloud de modelos híbridos, usa Null quando cached não existe e ordena por CPMT crescente.
+version: 4.0.0
 author: OpenWork User
-tags: [ollama, cloud, research, report, html, pricing]
+tags: [ollama, cloud, research, report, html, pricing, cpmt]
 agents: [opencode, claude-code, hermes-agent, codex, cursor]
 compatibility: Requires browser tools and file writing capabilities. Works in OpenCode, Claude Code, Hermes Agent, and other OpenWork-compatible harnesses.
 ---
 
 # Ollama Cloud Usage Report
 
-Esta skill pesquisa TODAS as variações cloud disponíveis na Ollama e gera um relatório HTML consolidado. O formato atual da Ollama exibe preços explícitos por 1M tokens; não use mais o antigo sistema de Usage com quatro barras ou níveis Low/Medium/High/Max.
+Pesquise todas as variações cloud disponíveis na Ollama e gere um relatório HTML autocontido, ordenado pelo CPMT (custo total por 1M tokens no pior caso). O formato antigo de barras e níveis Low/Medium/High/Max não deve ser usado.
 
-## Fluxo de execução
+## Fluxo de coleta
 
-### 1. Listar modelos iniciais
+1. Abra `https://ollama.com/search?c=cloud` e extraia todos os modelos base.
+2. Para cada modelo base, abra `https://ollama.com/library/{model-name}/tags` ou `View all`.
+3. Registre uma linha para cada tag que contenha `:cloud` ou seja explicitamente identificada como cloud; ignore tags exclusivamente locais.
+4. Abra a página individual de cada variação cloud para extrair os campos completos.
+5. Elimine duplicatas pelo nome completo da variação.
 
-1. Navegue até `https://ollama.com/search?c=cloud`.
-2. Extraia todos os links de modelos base, como `/library/gemma4` e `/library/qwen3.5`.
-3. Remova duplicatas e preserve o nome do modelo base.
+## Campos por variação
 
-### 2. Para cada modelo base, extrair todas as variações cloud
+Extraia:
 
-Não pare na página principal do modelo: muitos modelos têm várias variações cloud.
+- **Modelo**: nome completo da tag.
+- **Input**: preço por 1M tokens; preserve `base / peak` quando ambos forem exibidos.
+- **Cached**: preço por 1M tokens; use exatamente `Null` quando ausente.
+- **Output**: preço por 1M tokens; preserve `base / peak` quando ambos forem exibidos.
+- **CPMT**: soma numérica dos valores de pior caso.
+- **Available**: tags do card, mantendo somente `tools`, `vision` e `thinking`; omita `cloud`.
+- **Context**: valor e unidade exibidos.
+- **Size**: valor e unidade exibidos, ou `N/A` se ausente.
 
-Para cada modelo base:
+As tags ficam abaixo da descrição do modelo e acima do bloco Cost/Context/Size. Preserve a ordem em que aparecem no card. Se nenhuma capacidade elegível existir, exiba `—`.
 
-1. Navegue até `https://ollama.com/library/{model-name}/tags` ou clique em `View all` na seção `Models`.
-2. Para cada linha da tabela de tags, selecione a variação se:
-   - o nome contém `:cloud`; ou
-   - a página identifica explicitamente a tag como uma versão cloud.
-3. Ignore tags exclusivamente locais, sem indicação cloud.
-4. Abra a página de cada variação cloud quando necessário para obter os detalhes completos.
-5. Registre uma linha independente para cada variação cloud encontrada, inclusive quando duas variações pertencem ao mesmo modelo base.
+## Regra de CPMT
 
-### 3. Campos obrigatórios por variação
+Use o preço peak quando existir. Caso não exista peak, use o preço normalmente publicado. Para cada componente:
 
-Extraia os seguintes campos da página da variação:
+```text
+select(price) = price.peak quando existir; caso contrário price.normal
+numeric(price) = 0 quando o preço for Null; caso contrário select(price)
+CPMT = numeric(input) + numeric(cached) + numeric(output)
+```
 
-- **Modelo**: nome completo da tag, por exemplo `glm-5.3-flash:cloud`.
-- **Input**: preço monetário exibido em `Cost /1M tokens` sob `input`.
-- **Cached**: preço monetário exibido sob `cached`. Se a página não exibir esse campo, ou se não houver preço cached para o modelo, use exatamente `Null` (sem inventar ou estimar um valor).
-- **Output**: preço monetário exibido sob `output`.
-- **Context**: valor e unidade exibidos na seção `Context`, por exemplo `1M tokens`.
-- **Size**: valor e unidade exibidos na seção `Size`, por exemplo `321B parameters`, `64GB` ou `N/A` quando a página não informar o tamanho.
+`Null` deve continuar visível na coluna Cached, mas vale zero somente na soma. Exemplos:
 
-A unidade de preço deve ser sempre registrada como **por 1M tokens**. Preserve o texto monetário exibido pela Ollama, incluindo o símbolo `$` e zeros à esquerda quando houver. Não transforme preços em porcentagens, níveis ou barras.
+```text
+glm-5.3 = 1.40 + 0.26 + 4.40 = 6.06
+deepseek-v4-flash = 0.44 + 0.014 + 1.32 = 1.774
+qwen3.5 = 0.60 + 0 + 3.60 = 4.20
+```
 
-Exemplo visível na página de `glm-5.3-flash:cloud`:
+Ordene todos os registros por CPMT crescente antes de renderizar o HTML. Se input ou output não puder ser lido, use `N/A`, registre a URL para revisão e não invente o CPMT.
 
-| Campo | Valor |
-|---|---|
-| Input | `$0.15` |
-| Cached | `$0.03` |
-| Output | `$0.50` |
-| Context | `1M tokens` |
-| Size | `321B parameters` |
+## Estrutura da tabela
 
-### 4. Modelos híbridos conhecidos
-
-Estes modelos podem ter versões cloud e locais. Extraia apenas as variações cloud, mas não se limite a esta lista: sempre confira a página de tags atual.
-
-| Modelo base | Exemplos de variações cloud |
-|---|---|
-| gemma4 | `gemma4:cloud`, `gemma4:31b-cloud` |
-| qwen3.5 | `qwen3.5:cloud`, `qwen3.5:397b-cloud` |
-| nemotron-3-super | `nemotron-3-super:cloud` |
-| nemotron-3-nano | `nemotron-3-nano:30b-cloud` |
-| gpt-oss | `gpt-oss:20b-cloud`, `gpt-oss:120b-cloud` |
-
-### 5. Regras de extração e validação
-
-- Use a estrutura e as formas de navegação da versão anterior (`/search?c=cloud`, páginas `/tags` e páginas individuais).
-- Procure o rótulo `Cost /1M tokens` e os rótulos `input`, `cached` e `output` próximos a ele.
-- Não conte spans de cor, não procure `bg-neutral-900`, `bg-neutral-800` ou `bg-neutral-200` e não gere níveis Low/Medium/High/Max.
-- Se um preço obrigatório (`input` ou `output`) não puder ser lido, marque como `N/A` e registre a página para revisão; não adivinhe.
-- Se `cached` estiver ausente, use `Null`, inclusive no HTML e no resumo.
-- Verifique que cada linha tenha exatamente os campos Modelo, Input, Cached, Output, Context e Size.
-- Elimine duplicatas pelo nome completo da variação.
-- Ao final, informe se alguma página não pôde ser lida ou se algum campo obrigatório ficou `N/A`.
-
-## 6. Gerar HTML
-
-Crie um único arquivo `ollama-cloud-usage-report.html` no diretório atual do workspace. O relatório deve ser legível no navegador, responsivo e ter aparência profissional.
-
-Use uma tabela consolidada com estas colunas, nesta ordem:
+Use exatamente esta ordem:
 
 1. Modelo
 2. Input / 1M tokens
 3. Cached / 1M tokens
 4. Output / 1M tokens
-5. Context
-6. Size
+5. CPMT / 1M tokens
+6. Available
+7. Context
+8. Size
 
-Exemplo mínimo de linha:
+Renderize cada item de Available como uma pill visual. Não renderize `cloud` nessa coluna.
 
-```html
-<tr>
-  <td><code>glm-5.3-flash:cloud</code></td>
-  <td>$0.15</td>
-  <td>$0.03</td>
-  <td>$0.50</td>
-  <td>1M tokens</td>
-  <td>321B parameters</td>
-</tr>
-```
+## Estilo obrigatório do HTML
 
-Para um modelo sem cached:
+Crie somente `ollama-cloud-usage-report.html` no workspace. O estilo deve permanecer no mesmo arquivo, dentro de um único bloco `<style>`:
 
-```html
-<td>Null</td>
-```
+- visual refinado, limpo e profissional;
+- cards de resumo com total de variações, modelos base, cached disponível, cached Null, menor CPMT e maior CPMT;
+- destaque visual para CPMT, sem esconder Input/Cached/Output;
+- pills coloridas para `tools`, `vision` e `thinking`;
+- tabela responsiva com rolagem horizontal em telas pequenas;
+- contraste legível, foco em hierarquia e acessibilidade;
+- sem `<link>`, `@import`, CDN, fontes externas ou arquivos CSS/JS auxiliares;
+- notas metodológicas explicando peak, CPMT e `Null`.
 
-Inclua no topo:
+## Validação antes de finalizar
 
-- título `Ollama Cloud Usage Report`;
-- data da coleta;
-- total de variações cloud;
-- total de modelos base;
-- quantidade de registros com `cached` disponível;
-- quantidade de registros com `cached = Null`;
-- observação de que os preços são por 1M tokens;
-- lista de modelos híbridos identificados e suas variações cloud.
+Confirme que:
 
-Inclua uma seção de notas metodológicas informando que os dados foram coletados das páginas públicas da Ollama e que `Null` significa que a página não oferece preço cached, não que o preço seja zero.
+- a tabela está em ordem não decrescente de CPMT;
+- `Null` aparece visualmente onde cached não existe e entra como zero na soma;
+- `cloud` não aparece em Available;
+- Available contém somente `tools`, `vision`, `thinking` ou `—`;
+- cada linha possui CPMT, Available, Context e Size;
+- o HTML tem um único bloco `<style>` e nenhuma dependência externa;
+- páginas não lidas e campos `N/A` são listados no resumo final.
 
-## Output
+## Saída
 
-A skill gera um arquivo `ollama-cloud-usage-report.html` com:
-
-- ✅ todas as variações cloud encontradas;
-- ✅ variações cloud de modelos híbridos;
-- ✅ tabela única consolidada;
-- ✅ preços atuais de input, cached e output por 1M tokens;
-- ✅ `Null` para cached ausente;
-- ✅ Context e Size;
-- ✅ resumo estatístico e notas metodológicas;
-- ✅ estilização profissional para navegador.
-
-## Estrutura de dados recomendada
-
-Antes de renderizar o HTML, organize cada registro neste formato lógico:
-
-```json
-{
-  "model": "glm-5.3-flash:cloud",
-  "input_per_1m_tokens": "$0.15",
-  "cached_per_1m_tokens": "$0.03",
-  "output_per_1m_tokens": "$0.50",
-  "context": "1M tokens",
-  "size": "321B parameters"
-}
-```
-
-Quando cached não estiver disponível:
-
-```json
-{
-  "cached_per_1m_tokens": "Null"
-}
-```
-
-Não inclua o antigo campo `usage_level`, a contagem de barras ou classificações Low/Medium/High/Max no relatório novo.
+Gere o arquivo `ollama-cloud-usage-report.html` e informe o total de variações, o intervalo de CPMT, as capacidades encontradas e qualquer limitação de coleta.
